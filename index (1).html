@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICICE Imprest &amp; Petty Cash Reconciliation System</title>
+<style>
+  :root{
+    --green:#2b8a3e; --green-dark:#1e6f31; --green-soft:#e7f4ea;
+    --blue:#6cb2e0; --blue-dark:#3d7fb3; --blue-soft:#eaf3fb;
+    --bg:#f3f6f4; --card:#ffffff; --ink:#1f2937; --muted:#6b7280;
+    --amber:#b45309; --amber-soft:#fef3c7;
+    --red:#b91c1c; --red-soft:#fee2e2;
+    --border:#e5e7eb;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg); color:var(--ink); font-size:14px}
+  button{font:inherit; cursor:pointer}
+  input,select,textarea{font:inherit; color:var(--ink)}
+  a{color:var(--blue-dark)}
+
+  /* ---------- login ---------- */
+  #loginView{display:none; min-height:100vh; align-items:center; justify-content:center;
+             background:linear-gradient(160deg,#eef6ef 0%,#eaf3fb 100%); padding:20px}
+  .login-card{background:#fff; border-radius:16px; box-shadow:0 24px 70px rgba(20,60,35,.18);
+              width:100%; max-width:430px; padding:30px 28px; border-top:5px solid var(--green)}
+  .login-card img{width:72px; height:72px; object-fit:contain}
+  .login-card h1{font-size:18px; color:var(--green-dark); margin:10px 0 2px; line-height:1.25}
+  .login-card .sub{font-size:12.5px; color:var(--muted); margin-bottom:18px}
+  .lerr{background:var(--red-soft); color:var(--red); border-radius:8px; padding:8px 12px;
+        font-size:13px; margin-bottom:10px; display:none}
+  .cred{margin-top:18px; border:1px solid var(--border); border-radius:10px; overflow:hidden}
+  .cred summary{cursor:pointer; padding:10px 14px; font-size:12.5px; font-weight:600;
+                color:var(--green-dark); background:var(--green-soft)}
+  .cred table{font-size:12px}
+  .cred td{padding:6px 10px; border-bottom:1px solid var(--border)}
+  .cred tr:last-child td{border-bottom:none}
+  .cred code{background:#f3f4f6; border-radius:4px; padding:1px 6px; font-size:11.5px}
+
+  /* ---------- header ---------- */
+  header{background:#fff; border-bottom:3px solid var(--green); padding:12px 22px;
+         display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  header img{width:52px; height:52px; object-fit:contain}
+  .h-title h1{font-size:17px; color:var(--green-dark); line-height:1.2}
+  .h-title p{font-size:12px; color:var(--muted)}
+  .h-right{margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .id-chip{display:flex; flex-direction:column; gap:1px; background:var(--green-soft);
+           border:1px solid #cfe8d6; border-radius:8px; padding:6px 12px; font-size:12px; color:#374151}
+  .id-chip .r{font-size:11px; font-weight:700; color:var(--green-dark); text-transform:uppercase; letter-spacing:.3px}
+
+  /* ---------- nav ---------- */
+  nav{background:#fff; border-bottom:1px solid var(--border); padding:0 22px; display:flex; gap:4px}
+  nav button{background:none; border:none; padding:12px 16px; font-size:14px; font-weight:600;
+             color:var(--muted); border-bottom:3px solid transparent}
+  nav button.active{color:var(--green-dark); border-bottom-color:var(--green)}
+  nav .badge{background:var(--green-soft); color:var(--green-dark); border-radius:10px;
+             padding:1px 8px; font-size:11px; margin-left:4px}
+  main{max-width:1240px; margin:0 auto; padding:22px}
+  h2{font-size:16px; margin:22px 0 10px; color:var(--green-dark)}
+  h3{font-size:14px; margin-bottom:8px}
+
+  /* ---------- cards / grid ---------- */
+  .grid{display:grid; gap:14px}
+  .grid.stats{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .grid.cards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px}
+  .stat .lbl{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
+  .stat .val{font-size:22px; font-weight:700; color:var(--green-dark); margin-top:4px}
+  .stat .sub{font-size:12px; color:var(--muted); margin-top:2px}
+
+  /* ---------- chips & buttons ---------- */
+  .chip{display:inline-block; border-radius:999px; padding:2px 10px; font-size:11.5px; font-weight:600; white-space:nowrap}
+  .chip.green{background:var(--green-soft); color:var(--green-dark)}
+  .chip.blue{background:var(--blue-soft); color:var(--blue-dark)}
+  .chip.amber{background:var(--amber-soft); color:var(--amber)}
+  .chip.red{background:var(--red-soft); color:var(--red)}
+  .chip.gray{background:#f3f4f6; color:var(--muted)}
+  .btn{border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600}
+  .btn.primary{background:var(--green); color:#fff}
+  .btn.primary:hover{background:var(--green-dark)}
+  .btn.blue{background:var(--blue-dark); color:#fff}
+  .btn.danger{background:var(--red); color:#fff}
+  .btn.outline{background:#fff; border:1px solid var(--border); color:var(--ink)}
+  .btn.outline:hover{border-color:var(--green); color:var(--green-dark)}
+  .btn.sm{padding:5px 10px; font-size:12px}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+
+  /* ---------- tables ---------- */
+  table{width:100%; border-collapse:collapse; background:#fff}
+  th{font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted);
+     text-align:left; padding:8px 10px; border-bottom:2px solid var(--green-soft); background:#fafcfb}
+  td{padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .num{text-align:right; font-variant-numeric:tabular-nums}
+  .tot td{font-weight:700; background:var(--green-soft)}
+  .wrap{word-break:break-word; max-width:320px}
+
+  /* ---------- evidence ---------- */
+  .ev-thumb{width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer}
+  .ev-pdf{display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px;
+          border-radius:6px; background:var(--blue-soft); color:var(--blue-dark); font-size:10px;
+          font-weight:700; border:1px solid #cfe2f3; cursor:pointer}
+  .ev-none{font-size:11px; color:var(--muted)}
+
+  /* ---------- forms ---------- */
+  .field{margin-bottom:12px}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px}
+  .field input,.field select,.field textarea{width:100%; border:1px solid var(--border);
+        border-radius:8px; padding:8px 10px; background:#fff}
+  .field textarea{min-height:64px; resize:vertical}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .hint{font-size:11.5px; color:var(--muted); margin-top:4px}
+  .variance-ok{color:var(--green-dark); font-weight:700}
+  .variance-bad{color:var(--red); font-weight:700}
+
+  /* ---------- dept layout ---------- */
+  .dept-layout{display:grid; grid-template-columns:250px 1fr; gap:16px; align-items:start}
+  .dept-list button{display:flex; justify-content:space-between; width:100%; text-align:left;
+        background:#fff; border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+        margin-bottom:8px; font-size:13px}
+  .dept-list button.active{border-color:var(--green); background:var(--green-soft); font-weight:600}
+  .kpi-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px}
+  .kpi{background:#fff; border:1px solid var(--border); border-radius:10px; padding:10px 12px}
+  .kpi .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.3px}
+  .kpi .v{font-size:16px; font-weight:700; color:var(--green-dark)}
+  details.issue-block{background:#fff; border:1px solid var(--border); border-radius:10px;
+        margin-bottom:12px; overflow:hidden}
+  details.issue-block summary{cursor:pointer; padding:11px 14px; display:flex; gap:10px;
+        align-items:center; flex-wrap:wrap; list-style:none; background:#fafcfb}
+  details.issue-block summary::-webkit-details-marker{display:none}
+  .issue-body{padding:12px 14px; border-top:1px solid var(--border)}
+
+  /* ---------- queue cards ---------- */
+  .q-card{border-left:4px solid var(--blue); margin-bottom:10px}
+  .q-card.warn{border-left-color:var(--amber)}
+  .q-card.good{border-left-color:var(--green)}
+  .q-head{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:6px}
+  .q-meta{font-size:12px; color:var(--muted); margin:3px 0}
+  .q-actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap}
+  .trail{background:var(--blue-soft); border-radius:8px; padding:8px 10px; font-size:12px; margin-top:8px}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(15,40,25,.45); display:flex;
+           align-items:flex-start; justify-content:center; padding:40px 16px; z-index:50; overflow:auto}
+  .modal{background:#fff; border-radius:14px; width:100%; max-width:560px; padding:20px;
+         box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .modal h3{font-size:15px; color:var(--green-dark); margin-bottom:12px}
+  .modal .foot{display:flex; justify-content:flex-end; gap:8px; margin-top:16px; flex-wrap:wrap}
+  .lightbox-img{max-width:100%; max-height:70vh; display:block; margin:0 auto}
+
+  /* ---------- toast ---------- */
+  #toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+         background:#14532d; color:#fff; padding:10px 20px; border-radius:10px; font-size:13px;
+         z-index:99; opacity:0; pointer-events:none; transition:opacity .25s}
+  #toast.show{opacity:1}
+  #toast.err{background:#7f1d1d}
+
+  .empty{color:var(--muted); font-size:13px; padding:14px; text-align:center; background:#fff;
+         border:1px dashed var(--border); border-radius:10px}
+  .cycle{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-top:8px}
+  .cycle div{background:#fff; border:1px solid var(--border); border-left:4px solid var(--green);
+             border-radius:8px; padding:10px 12px; font-size:12.5px; color:#374151}
+  .cycle b{color:var(--green-dark)}
+  .small{font-size:12px; color:var(--muted)}
+  .mt10{margin-top:10px}
+  .flex{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .matrix td.y{color:var(--green-dark); font-weight:700; text-align:center}
+  .matrix td.n{color:#c3c9d1; text-align:center}
+
+  @media (max-width:860px){ .dept-layout{grid-template-columns:1fr} .row2{grid-template-columns:1fr} }
+  @media print{
+    header,nav,.no-print,#toast{display:none !important}
+    body{background:#fff}
+    main{padding:0; max-width:none}
+    .card,.kpi{border:none; box-shadow:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginView">
+  <div class="login-card">
+    <img src="/logo.jpg" alt="ICICE logo">
+    <h1>ICICE Imprest &amp; Petty Cash<br>Reconciliation System</h1>
+    <div class="sub">Sign in with your account issued by the Super Administrator</div>
+    <div class="lerr" id="lerr"></div>
+    <form id="loginForm">
+      <div class="field"><label>Username</label>
+        <input id="lu" autocomplete="username" required autofocus></div>
+      <div class="field"><label>Password</label>
+        <input id="lp" type="password" autocomplete="current-password" required></div>
+      <button class="btn primary" type="submit" style="width:100%">Sign in</button>
+    </form>
+    <details class="cred">
+      <summary>Default accounts (demo — Super Admin can change any password)</summary>
+      <table>
+        <tr><th>Unit / Dept</th><th>Username</th><th>Password</th></tr>
+        <tr><td>Super Admin</td><td><code>admin</code></td><td><code>Admin@2026</code></td></tr>
+        <tr><td>Finance &amp; Accounts</td><td><code>finance</code></td><td><code>Finance@2026</code></td></tr>
+        <tr><td>Director General</td><td><code>dg</code></td><td><code>DG@2026</code></td></tr>
+        <tr><td>ICICE Care</td><td><code>care</code></td><td><code>Care@2026</code></td></tr>
+        <tr><td>Facility &amp; Procurement</td><td><code>facility</code></td><td><code>Facility@2026</code></td></tr>
+        <tr><td>Community &amp; Mosque Ops</td><td><code>community</code></td><td><code>Community@2026</code></td></tr>
+        <tr><td>Education &amp; Training</td><td><code>education</code></td><td><code>Education@2026</code></td></tr>
+        <tr><td>Al-Noor Academy</td><td><code>alnoor</code></td><td><code>AlNoor@2026</code></td></tr>
+        <tr><td>DG's Office</td><td><code>dgo</code></td><td><code>DGO@2026</code></td></tr>
+        <tr><td>ICT</td><td><code>ict</code></td><td><code>ICT@2026</code></td></tr>
+      </table>
+    </details>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appRoot" style="display:none">
+  <header>
+    <img src="/logo.jpg" alt="ICICE logo">
+    <div class="h-title">
+      <h1>ICICE Imprest &amp; Petty Cash Reconciliation System</h1>
+      <p>Advance · Evidence · Retirement · Re-advance approval (Finance Office &amp; DG)</p>
+    </div>
+    <div class="h-right no-print">
+      <div class="id-chip" id="idChip"></div>
+      <button class="btn outline sm" id="logoutBtn">Sign out</button>
+    </div>
+  </header>
+  <nav class="no-print" id="nav"></nav>
+  <main id="view"></main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+/* ============================== helpers ============================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => '₦' + Number(n||0).toLocaleString('en-NG',{minimumFractionDigits:2, maximumFractionDigits:2});
+function fdate(s){ if(!s) return '—'; const [y,m,d] = s.slice(0,10).split('-'); return `${d}/${m}/${y}`; }
+function fts(s){ if(!s) return '—'; const [d,t] = s.split('T'); return d? fdate(d)+(t?' '+t.slice(0,5):'') : '—'; }
+const roleLabel = r => ({admin:'Super Admin', finance:'Finance & Accounts', dg:'Director General', dept:'Department Head'})[r] || r;
+
+let state = null, me = null;
+const UI = { tab:'dashboard', dept:1 };
+
+const can = {
+  issue:     () => me && ['finance','admin'].includes(me.role),
+  verify:    () => me && ['finance','admin'].includes(me.role),
+  finDecide: () => me && ['finance','admin'].includes(me.role),
+  dgDecide:  () => me && ['dg','admin'].includes(me.role),
+  release:   () => me && ['finance','admin'].includes(me.role),
+  deptOf:    id => me && (me.role==='admin' || (me.role==='dept' && me.dept_id===id)),
+  admin:     () => me && me.role==='admin',
+};
+
+async function refresh(){
+  const r = await fetch('/api/state');
+  if(r.status===401){ showLogin(); throw new Error('Session expired'); }
+  state = await r.json();
+  me = state.me;
+  render();
+}
+function toast(msg, err=false){
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err?' err':'');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.className='', 3200);
+}
+async function api(url, body){
+  const r = await fetch(url, {method:'POST',
+    headers: body instanceof FormData ? {} : {'Content-Type':'application/json'},
+    body: body instanceof FormData ? body : JSON.stringify(body||{})});
+  if(r.status===401){ showLogin(); throw new Error('Session expired — please sign in again.'); }
+  const j = await r.json().catch(()=>({ok:false, error:'Request failed'}));
+  if(!j.ok) throw new Error(j.error || 'Request failed');
+  return j;
+}
+
+/* ============================== auth flow ============================== */
+async function boot(){
+  try{
+    const r = await fetch('/api/me');
+    if(r.ok){ me = (await r.json()).me; showApp(); } else showLogin();
+  }catch(e){ showLogin(); }
+}
+function showLogin(){
+  me = null; state = null;
+  $('#loginView').style.display = 'flex';
+  $('#appRoot').style.display = 'none';
+  $('#view').innerHTML = '';
+  const f = $('#loginForm'); if(f){ f.reset(); $('#lerr').style.display='none'; }
+}
+async function doLogin(e){
+  e.preventDefault();
+  const r = await fetch('/api/login', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username:$('#lu').value, password:$('#lp').value})});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok || !j.ok){
+    const el = $('#lerr'); el.textContent = j.error || 'Login failed.'; el.style.display='block';
+    return;
+  }
+  me = j.me; showApp();
+}
+function showApp(){
+  $('#loginView').style.display = 'none';
+  $('#appRoot').style.display = 'block';
+  UI.dept = me.role==='dept' ? me.dept_id : 1;
+  UI.tab = 'dashboard';
+  refresh();
+}
+$('#loginForm').onsubmit = doLogin;
+$('#logoutBtn').onclick = async ()=>{ await fetch('/api/logout',{method:'POST'}); showLogin(); };
+
+/* ============================== header/nav ============================== */
+function renderHeader(){
+  $('#idChip').innerHTML = `<span class="r">${roleLabel(me.role)}</span>
+    <span><b>${esc(me.full_name)}</b>${me.dept_name?` — ${esc(me.dept_name)}`:''}</span>`;
+  const q = state.queues;
+  const pending = q.requests_pending_finance.length + q.requests_pending_dg.length + q.settlements_pending_finance.length;
+  const tabs = [
+    ['dashboard','Dashboard'],
+    ['departments','Departments'],
+    ['approvals',`Approvals${pending?` <span class="badge">${pending}</span>`:''}`],
+    ['reports','Reports'],
+  ];
+  if(can.admin()) tabs.push(['admin','Admin']);
+  $('#nav').innerHTML = tabs.map(([id,lbl])=>
+    `<button class="${UI.tab===id?'active':''}" data-action="tab" data-tab="${id}">${lbl}</button>`).join('');
+}
+
+/* ============================== chips ============================== */
+function setChip(st){
+  return { not_submitted:'<span class="chip gray">No settlement yet</span>',
+           pending:'<span class="chip amber">Awaiting verification</span>',
+           verified:'<span class="chip green">Verified / reconciled</span>',
+           returned:'<span class="chip red">Returned — resubmit</span>' }[st] || st;
+}
+function reqChip(st){
+  return { pending_finance:'<span class="chip blue">Awaiting Finance Office</span>',
+           pending_dg:'<span class="chip blue">Awaiting DG</span>',
+           approved:'<span class="chip green">Approved — ready for release</span>',
+           rejected:'<span class="chip red">Rejected</span>',
+           released:'<span class="chip green">Released</span>' }[st] || st;
+}
+function evCell(e){
+  if(!e.evidence_path) return '<span class="ev-none">no evidence</span>';
+  const p = '/evidence/' + encodeURIComponent(e.evidence_path);
+  if(e.evidence_path.toLowerCase().endsWith('.pdf'))
+    return `<span class="ev-pdf" data-action="lightbox" data-src="${p}" data-pdf="1">PDF</span>`;
+  return `<img class="ev-thumb" src="${p}" data-action="lightbox" data-src="${p}" alt="receipt">`;
+}
+
+/* ============================== dashboard ============================== */
+function renderDashboard(){
+  const q = state.queues;
+  const outstanding = state.depts.reduce((s,d)=>{
+    const ai = d.active_issue;
+    return s + (ai && ai.settlement_status!=='verified' ? ai.amount : 0);
+  },0);
+  const verifiedCount = state.depts.reduce((s,d)=>s+d.issues.filter(i=>i.settlement_status==='verified').length,0);
+  const pendingAll = q.settlements_pending_finance.length + q.requests_pending_finance.length + q.requests_pending_dg.length;
+  const readyRelease = q.requests_approved.length;
+  const mine = me.role==='dept';
+
+  let html = `
+  <div class="grid stats">
+    <div class="card stat"><div class="lbl">${mine?'My department':'Imprest outstanding (not yet retired)'}</div>
+      <div class="val">${fmt(outstanding)}</div><div class="sub">${mine?'still unretired in your department':'across all departments'}</div></div>
+    <div class="card stat"><div class="lbl">${mine?'My expenses recorded':'Total expenses recorded (evidenced)'}</div>
+      <div class="val">${fmt(state.totals.expenses)}</div><div class="sub">${state.totals.issued?('advanced '+fmt(state.totals.issued)):'no advances yet'}</div></div>
+    <div class="card stat"><div class="lbl">Awaiting action</div>
+      <div class="val" style="color:${pendingAll?'var(--amber)':'var(--green-dark)'}">${pendingAll}</div>
+      <div class="sub">${q.settlements_pending_finance.length} settlement(s) · ${q.requests_pending_finance.length} for Finance · ${q.requests_pending_dg.length} for DG</div></div>
+    <div class="card stat"><div class="lbl">Settlements verified</div>
+      <div class="val">${verifiedCount}</div><div class="sub">${readyRelease} approved request(s) ready for release</div></div>
+  </div>
+
+  <h2>${mine?'My department':'Departments'}</h2>
+  <div class="grid cards">
+  ${state.depts.map(d=>{
+    const ai = d.active_issue;
+    return `<div class="card">
+      <div class="flex" style="justify-content:space-between">
+        <h3 style="margin:0">${esc(d.name)}</h3>
+        <button class="btn outline sm" data-action="open-dept" data-id="${d.id}">Open</button>
+      </div>
+      <div class="mt10 small">
+        ${ai ? `Active imprest: <b>${esc(ai.voucher_no)}</b> (${fdate(ai.issue_date)}) — <b>${fmt(ai.amount)}</b>`
+             : '<span class="chip gray">No imprest issued</span>'}
+      </div>
+      <div class="mt10 flex">
+        ${ai ? `<span class="chip gray">Spent ${fmt(ai.expenses_total)}</span>
+                <span class="chip ${ai.cash_on_hand<0?'red':'blue'}">${ai.cash_estimated?'Est. cash':'Cash on hand'} ${fmt(ai.cash_on_hand)}</span>` : ''}
+        ${setChip(ai?ai.settlement_status:'none')}
+      </div>
+      ${d.open_request ? `<div class="mt10 small">Open request: <b>${fmt(d.open_request.amount)}</b> ${reqChip(d.open_request.status)}</div>` : ''}
+    </div>`;
+  }).join('')}
+  </div>
+
+  ${mine ? '' : `<h2>How the imprest cycle works</h2>
+  <div class="cycle">
+    <div><b>1 · Advance</b> — Finance &amp; Accounts Office issues an imprest to a department with a voucher number.</div>
+    <div><b>2 · Evidence</b> — The department records each expense incurred and uploads the receipt / evidence.</div>
+    <div><b>3 · Retirement</b> — The department submits the imprest for reconciliation: amount = expenses + cash on hand.</div>
+    <div><b>4 · Verification</b> — Finance &amp; Accounts Office verifies (or returns) the settlement.</div>
+    <div><b>5 · Re-advance</b> — A new imprest request is approved by the Finance Office, then the DG, before release.</div>
+  </div>`}`;
+  $('#view').innerHTML = html;
+}
+
+/* ============================== departments ============================== */
+function renderDepartments(){
+  const d = state.depts.find(x=>x.id===UI.dept) || state.depts[0];
+  UI.dept = d.id;
+  const mine = can.deptOf(d.id);
+  let html = `<div class="dept-layout">
+  <div class="dept-list">
+    ${state.depts.map(x=>`<button class="${x.id===d.id?'active':''}" data-action="pick-dept" data-id="${x.id}">
+        <span>${esc(x.name)}</span>
+        ${x.open_request?'<span class="chip blue">req</span>':
+          x.active_issue && x.active_issue.settlement_status==='pending'?'<span class="chip amber">settle</span>':''}
+      </button>`).join('')}
+  </div>
+  <div>
+    <div class="flex" style="justify-content:space-between; margin-bottom:10px">
+      <h3 style="font-size:16px; margin:0; color:var(--green-dark)">${esc(d.name)}</h3>
+      <div class="flex no-print">
+        ${can.issue()?`<button class="btn primary sm" data-action="issue-modal" data-id="${d.id}">＋ Issue imprest</button>`:''}
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="l">Total advanced</div><div class="v">${fmt(d.total_issued)}</div></div>
+      <div class="kpi"><div class="l">Total expenses</div><div class="v">${fmt(d.total_expenses)}</div></div>
+      <div class="kpi"><div class="l">Active imprest</div><div class="v">${d.active_issue?fmt(d.active_issue.amount):'—'}</div></div>
+      <div class="kpi"><div class="l">Cash on hand (active)</div><div class="v">${d.active_issue?fmt(d.active_issue.cash_on_hand):'—'}${d.active_issue&&d.active_issue.cash_estimated?'<small style="color:var(--muted)"> (est.)</small>':''}</div></div>
+    </div>`;
+
+  /* ---- issues */
+  html += `<h2>Imprest advances &amp; retirement</h2>`;
+  if(!d.issues.length){
+    html += `<div class="empty">No imprest has been issued to ${esc(d.name)} yet.
+      ${can.issue()?'The Finance Office can issue the first advance above.':'The Finance &amp; Accounts Office issues advances from the account department.'}</div>`;
+  }
+  d.issues.forEach(i=>{
+    const lock = i.settlement_status==='verified';
+    html += `<details class="issue-block" ${i===d.active_issue?'open':''}>
+      <summary>
+        <span class="chip ${lock?'green':'blue'}">${esc(i.voucher_no)}</span>
+        <b>${fmt(i.amount)}</b>
+        <span class="small">issued ${fdate(i.issue_date)}</span>
+        ${setChip(i.settlement_status)}
+        <span style="margin-left:auto" class="small">
+          ${i.expenses_count} expense(s) · spent ${fmt(i.expenses_total)} ·
+          cash ${fmt(i.cash_on_hand)}${i.cash_estimated?' (est.)':''} ·
+          variance ${fmt(i.variance)}
+        </span>
+      </summary>
+      <div class="issue-body">
+        ${i.notes?`<div class="small" style="margin-bottom:8px">Notes: ${esc(i.notes)}</div>`:''}
+        ${i.settlement ? `
+        <div class="trail" style="background:${i.settlement_status==='verified'?'var(--green-soft)':i.settlement_status==='returned'?'var(--red-soft)':'var(--amber-soft)'}">
+          <b>Settlement</b> submitted ${fts(i.settlement.submitted_at)} —
+          expenses ${fmt(i.settlement.expenses_total)} + cash on hand ${fmt(i.settlement.cash_on_hand)}
+          = ${fmt(i.settlement.expenses_total+i.settlement.cash_on_hand)} (advanced ${fmt(i.amount)}, variance ${fmt(i.settlement.variance)}).
+          ${i.settlement.notes?` Notes: ${esc(i.settlement.notes)}.`:''}
+          ${i.settlement_status!=='pending'?` Status: <b>${i.settlement_status}</b>${i.settlement.verify_notes?` — ${esc(i.settlement.verify_notes)}`:''} (${fts(i.settlement.verified_at)})`:''}
+        </div>`:''}
+        <table class="mt10">
+          <tr><th>Date</th><th>Category</th><th>Description</th><th>Evidence</th><th class="num">Amount</th></tr>
+          ${i.expenses.map(e=>`<tr>
+            <td>${fdate(e.expense_date)}</td>
+            <td><span class="chip gray">${esc(e.category)}</span></td>
+            <td class="wrap">${esc(e.description)}</td>
+            <td>${evCell(e)}</td>
+            <td class="num">${fmt(e.amount)}</td>
+          </tr>`).join('') || '<tr><td colspan="5" class="small">No expenses recorded yet.</td></tr>'}
+          <tr class="tot"><td colspan="4">Total expenses (evidenced)</td><td class="num">${fmt(i.expenses_total)}</td></tr>
+        </table>
+        <div class="flex mt10 no-print">
+          ${mine && !lock ? `
+            <button class="btn primary sm" data-action="expense-modal" data-issue="${i.id}">＋ Add expense &amp; upload evidence</button>
+            ${i.settlement_status!=='pending' ?
+              `<button class="btn blue sm" data-action="settlement-modal" data-issue="${i.id}">${i.settlement_status==='returned'?'↻ Resubmit settlement':'Submit for retirement'}</button>`:''}
+          `:''}
+          ${can.verify() && i.settlement_status==='pending' ?
+            `<button class="btn blue sm" data-action="verify-modal" data-issue="${i.id}">Verify settlement</button>`:''}
+          ${lock?'<span class="chip green">Retired — locked</span>':''}
+        </div>
+      </div>
+    </details>`;
+  });
+
+  /* ---- requests */
+  const reqs = state.requests.filter(r=>r.dept_id===d.id);
+  html += `<h2>New imprest requests (re-advance)</h2>`;
+  if(mine && !d.open_request){
+    html += `<form id="reqForm" class="card" style="margin-bottom:12px">
+      <div class="row2">
+        <div class="field"><label>Amount requested (₦)</label>
+          <input type="number" name="amount" min="1" step="0.01" required placeholder="e.g. 150000"></div>
+        <div class="field"><label>Purpose / justification</label>
+          <input type="text" name="purpose" required placeholder="What the re-advance will cover"></div>
+      </div>
+      <div class="hint">Route: <b>Finance &amp; Accounts Office</b> review → <b>Director General (DG)</b> approval → release by Finance.
+      A department may have only one open request at a time.</div>
+      <div class="mt10"><button class="btn primary sm" type="submit">Submit request for approval</button></div>
+    </form>`;
+  } else if(mine && d.open_request){
+    html += `<div class="empty" style="margin-bottom:12px">An open request is already in progress for this department — ${reqChip(d.open_request.status)}.</div>`;
+  }
+  html += `<table>
+    <tr><th>Date</th><th class="num">Amount</th><th>Purpose</th><th>Status</th><th>Decision trail</th></tr>
+    ${reqs.map(r=>`<tr>
+      <td>${fdate(r.created_at)}</td>
+      <td class="num">${fmt(r.amount)}</td>
+      <td class="wrap">${esc(r.purpose)}</td>
+      <td>${reqChip(r.status)}</td>
+      <td class="small" style="max-width:300px">
+        ${r.finance_at?`<b>Finance:</b> ${r.status==='rejected'&&!r.dg_at?'Rejected':'Approved'} ${fts(r.finance_at)}${r.finance_comment?` — ${esc(r.finance_comment)}`:''}<br>`:''}
+        ${r.dg_at?`<b>DG:</b> ${r.status==='rejected'?'Rejected':'Approved'} ${fts(r.dg_at)}${r.dg_comment?` — ${esc(r.dg_comment)}`:''}`:''}
+        ${!r.finance_at&&!r.dg_at?'<span class="chip blue">Awaiting Finance Office</span>':''}
+        ${r.issue_id?`<br><b>Released as</b> ${esc(d.issues.find(x=>x.id===r.issue_id)?.voucher_no||('#'+r.issue_id))}`:''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="5" class="small">No requests yet.</td></tr>'}
+  </table>`;
+
+  html += `</div></div>`;
+  $('#view').innerHTML = html;
+
+  const rf = $('#reqForm');
+  if(rf) rf.onsubmit = async e=>{
+    e.preventDefault();
+    const f = new FormData(rf);
+    try{
+      await api('/api/requests', {dept_id:d.id, amount:+f.get('amount'), purpose:f.get('purpose').trim()});
+      toast('Imprest request submitted for Finance review.');
+      await refresh();
+    }catch(err){ toast(err.message, true); }
+  };
+}
+
+/* ============================== approvals ============================== */
+function renderApprovals(){
+  const q = state.queues;
+  let html = '';
+  const issueById = id => state.depts.flatMap(d=>d.issues).find(i=>i.id===id);
+  const reqById = id => state.requests.find(r=>r.id===id);
+
+  if(me.role==='finance' || me.role==='admin'){
+    html += `<h2>1 · Settlements awaiting verification <span class="chip amber">${q.settlements_pending_finance.length}</span></h2>`;
+    if(!q.settlements_pending_finance.length) html += `<div class="empty">No settlements waiting. ✓</div>`;
+    q.settlements_pending_finance.forEach(id=>{
+      const i = issueById(id); if(!i) return;
+      html += `<div class="card q-card warn">
+        <div class="q-head"><b>${esc(state.depts.find(d=>d.id===i.dept_id).name)}</b> ${setChip(i.settlement_status)}</div>
+        <div class="q-meta">Imprest <b>${esc(i.voucher_no)}</b> of ${fmt(i.amount)} issued ${fdate(i.issue_date)} ·
+        expenses ${fmt(i.expenses_total)} (${i.expenses_count} item(s)) · cash on hand ${fmt(i.cash_on_hand)} ·
+        variance <b class="${i.variance===0?'variance-ok':'variance-bad'}">${fmt(i.variance)}</b></div>
+        ${i.settlement?.notes?`<div class="q-meta">Submitted notes: ${esc(i.settlement.notes)}</div>`:''}
+        <div class="q-actions">
+          <button class="btn primary sm" data-action="verify-modal" data-issue="${i.id}">Open &amp; verify</button>
+        </div>
+      </div>`;
+    });
+
+    html += `<h2>2 · Imprest requests awaiting the Finance Office <span class="chip blue">${q.requests_pending_finance.length}</span></h2>`;
+    if(!q.requests_pending_finance.length) html += `<div class="empty">None pending. ✓</div>`;
+    q.requests_pending_finance.forEach(id=> html += reqCard(id));
+
+    html += `<h2>3 · Approved requests ready for release <span class="chip green">${q.requests_approved.length}</span></h2>
+    <p class="small" style="margin-bottom:8px">Both approval levels are complete. Release creates the new imprest issue.</p>`;
+    if(!q.requests_approved.length) html += `<div class="empty">Nothing awaiting release.</div>`;
+    q.requests_approved.forEach(id=> html += reqCard(id));
+  }
+  else if(me.role==='dg'){
+    html += `<h2>Imprest requests awaiting the DG's approval <span class="chip blue">${q.requests_pending_dg.length}</span></h2>
+    <p class="small" style="margin-bottom:8px">These have already cleared the Finance &amp; Accounts Office review.</p>`;
+    if(!q.requests_pending_dg.length) html += `<div class="empty">No requests awaiting your approval. ✓</div>`;
+    q.requests_pending_dg.forEach(id=> html += reqCard(id));
+    const rejected = state.requests.filter(r=>r.status==='rejected');
+    html += `<h2>Rejected requests (for reference)</h2>`;
+    html += rejected.length ? rejected.map(r=>reqCard(r.id, true)).join('') : `<div class="empty">None.</div>`;
+  }
+  else {
+    const d = state.depts.find(x=>x.id===me.dept_id) || state.depts[0];
+    const myReqs = state.requests.filter(r=>r.dept_id===d.id);
+    const myPend = d.issues.filter(i=>i.settlement_status==='pending');
+    html += `<h2>My department's items in the approval pipeline</h2>
+    ${myPend.length? myPend.map(i=>`<div class="card q-card warn">
+      <div class="q-head"><b>Settlement of ${esc(i.voucher_no)}</b> ${setChip(i.settlement_status)}</div>
+      <div class="q-meta">expenses ${fmt(i.expenses_total)} + cash ${fmt(i.cash_on_hand)} = ${fmt(i.expenses_total+i.cash_on_hand)} (advanced ${fmt(i.amount)})</div>
+    </div>`).join('') : ''}
+    ${myReqs.filter(r=>['pending_finance','pending_dg','approved'].includes(r.status)).map(r=>reqCard(r.id, true)).join('')}
+    ${!myPend.length && !myReqs.filter(r=>['pending_finance','pending_dg','approved'].includes(r.status)).length
+        ? '<div class="empty">Nothing currently in the pipeline for your department.</div>':''}`;
+  }
+
+  $('#view').innerHTML = html || '<div class="empty">Nothing to approve right now.</div>';
+
+  function reqCard(id, plain=false){
+    const r = reqById(id); if(!r) return '';
+    const actions = [];
+    if(!plain){
+      if(r.status==='pending_finance' && can.finDecide()){
+        actions.push(`<button class="btn primary sm" data-action="decide" data-id="${r.id}" data-level="finance" data-decision="approve">Approve</button>`,
+                     `<button class="btn danger sm" data-action="decide" data-id="${r.id}" data-level="finance" data-decision="reject">Reject</button>`);
+      }
+      if(r.status==='pending_dg' && can.dgDecide()){
+        actions.push(`<button class="btn primary sm" data-action="decide" data-id="${r.id}" data-level="dg" data-decision="approve">Approve</button>`,
+                     `<button class="btn danger sm" data-action="decide" data-id="${r.id}" data-decision="reject" data-level="dg">Reject</button>`);
+      }
+      if(r.status==='approved' && can.release()){
+        actions.push(`<button class="btn blue sm" data-action="release-modal" data-id="${r.id}">Release imprest</button>`);
+      }
+    }
+    return `<div class="card q-card ${r.status==='approved'?'good':r.status==='rejected'?'':'warn'}">
+      <div class="q-head"><b>${esc(r.dept_name)}</b> ${reqChip(r.status)}</div>
+      <div class="q-meta">Request <b>#${r.id}</b> for <b>${fmt(r.amount)}</b> — ${esc(r.purpose)}</div>
+      <div class="q-meta">Submitted ${fts(r.created_at)}</div>
+      <div class="trail">
+        ${r.finance_at?`<b>Finance &amp; Accounts Office:</b> ${r.finance_comment?esc(r.finance_comment):'—'} <span class="small">(${fts(r.finance_at)})</span><br>`:'<b>Finance &amp; Accounts Office:</b> pending'}
+        ${r.dg_at?`<b>DG:</b> ${r.dg_comment?esc(r.dg_comment):'—'} <span class="small">(${fts(r.dg_at)})</span>`:'<b>DG:</b> pending'}
+      </div>
+      ${actions.length?`<div class="q-actions no-print">${actions.join('')}</div>`:''}
+    </div>`;
+  }
+}
+
+/* ============================== reports ============================== */
+function renderReports(){
+  const rows = state.depts.map(d=>{
+    const ai = d.active_issue;
+    return { d, ai,
+      open: d.open_request ? `${fmt(d.open_request.amount)} (${d.open_request.status.replace('_',' ')})` : '—' };
+  });
+  const totAdv = rows.reduce((s,r)=>s+(r.ai&&!['verified'].includes(r.ai.settlement_status)?r.ai.amount:0),0);
+  const totExp = state.depts.reduce((s,d)=>s+d.issues.filter(i=>i.settlement_status!=='verified').reduce((x,i)=>x+i.expenses_total,0),0);
+  const totCash = rows.reduce((s,r)=>s+(r.ai&&r.ai.settlement_status!=='verified'?r.ai.cash_on_hand:0),0);
+  const scope = me.role==='dept' ? ' — ' + esc(state.depts[0].name) : '';
+
+  let html = `
+  <div class="flex no-print" style="justify-content:space-between; margin-bottom:10px">
+    <div><b>Imprest Reconciliation Statement${scope}</b>
+    <div class="small">Prepared ${new Date().toLocaleDateString('en-NG',{day:'2-digit',month:'long',year:'numeric'})} by ${esc(me.full_name)} (${roleLabel(me.role)})</div></div>
+    <button class="btn primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+  </div>
+  <div class="card" style="overflow-x:auto">
+  <table>
+    <tr><th>Department</th><th>Active voucher</th><th class="num">Advanced</th><th class="num">Expenses recorded</th>
+        <th class="num">Cash on hand</th><th class="num">Variance</th><th>Settlement status</th><th>Open request</th></tr>
+    ${rows.map(r=>`<tr>
+      <td><b>${esc(r.d.name)}</b></td>
+      <td>${r.ai?`${esc(r.ai.voucher_no)}<br><span class="small">${fdate(r.ai.issue_date)}</span>`:'—'}</td>
+      <td class="num">${r.ai?fmt(r.ai.amount):'—'}</td>
+      <td class="num">${r.ai?fmt(r.ai.expenses_total):'—'} <span class="small">(${r.ai?r.ai.expenses_count:0})</span></td>
+      <td class="num">${r.ai?fmt(r.ai.cash_on_hand)+'<span class="small">'+(r.ai.cash_estimated?' est.':'')+'</span>':'—'}</td>
+      <td class="num">${r.ai?fmt(r.ai.variance):'—'}</td>
+      <td>${r.ai?setChip(r.ai.settlement_status):'<span class="chip gray">no issue</span>'}</td>
+      <td class="small">${r.open}</td>
+    </tr>`).join('')}
+    <tr class="tot"><td>Outstanding (unretired) totals</td><td></td>
+      <td class="num">${fmt(totAdv)}</td><td class="num">${fmt(totExp)}</td>
+      <td class="num">${fmt(totCash)}</td><td class="num">${fmt(totAdv-totExp-totCash)}</td><td></td><td></td></tr>
+  </table></div>
+
+  <h2>Departmental expense schedules (evidenced)</h2>`;
+  state.depts.forEach(d=>{
+    html += `<div class="card" style="margin-bottom:12px">
+      <h3>${esc(d.name)}</h3>`;
+    d.issues.forEach(i=>{
+      html += `<div class="small" style="margin:6px 0 4px">Imprest ${esc(i.voucher_no)} (${fdate(i.issue_date)}) — ${fmt(i.amount)} ${setChip(i.settlement_status)}</div>
+      <table>
+        <tr><th>Date</th><th>Category</th><th>Description</th><th>Evidence file</th><th class="num">Amount</th></tr>
+        ${i.expenses.map(e=>`<tr><td>${fdate(e.expense_date)}</td><td>${esc(e.category)}</td><td class="wrap">${esc(e.description)}</td>
+          <td class="small">${e.evidence_name?esc(e.evidence_name):'<span class="ev-none">none uploaded</span>'}</td><td class="num">${fmt(e.amount)}</td></tr>`).join('')
+          || '<tr><td colspan="5" class="small">No expenses recorded.</td></tr>'}
+        <tr class="tot"><td colspan="4">Expenses total — cash on hand ${fmt(i.cash_on_hand)}${i.cash_estimated?' (estimated)':''} — variance ${fmt(i.variance)}</td>
+          <td class="num">${fmt(i.expenses_total)}</td></tr>
+      </table>`;
+    });
+    if(!d.issues.length) html += `<div class="small" style="padding:8px">No imprest issued to this department.</div>`;
+    html += `</div>`;
+  });
+  html += `<p class="small mt10">Reconciliation principle: <b>Imprest advanced = Expenses evidenced + Cash on hand</b>.
+  Zero variance indicates full reconciliation. New advances require approval by the Finance &amp; Accounts Office and the DG.</p>`;
+  $('#view').innerHTML = html;
+}
+
+/* ============================== admin ============================== */
+let adminUsers = [];
+async function renderAdmin(){
+  const r = await fetch('/api/users');
+  adminUsers = r.ok ? (await r.json()).users : [];
+  let html = `
+  <h2>System users</h2>
+  <p class="small" style="margin-bottom:8px">Super Admin controls every account: create, reset passwords, and activate/deactivate.
+  Password resets sign the user out immediately.</p>
+  <div class="card" style="overflow-x:auto">
+  <table>
+    <tr><th>Username</th><th>Name</th><th>Role</th><th>Department</th><th>Last login</th><th>Status</th><th class="no-print">Actions</th></tr>
+    ${adminUsers.map(u=>`<tr>
+      <td><code>${esc(u.username)}</code></td>
+      <td>${esc(u.full_name)}</td>
+      <td><span class="chip ${u.role==='admin'?'green':u.role==='dept'?'blue':'amber'}">${roleLabel(u.role)}</span></td>
+      <td>${u.dept_name?esc(u.dept_name):'—'}</td>
+      <td class="small">${u.last_login_at?fts(u.last_login_at):'never'}</td>
+      <td>${u.active?'<span class="chip green">Active</span>':'<span class="chip red">Deactivated</span>'}</td>
+      <td class="no-print" style="white-space:nowrap">
+        <button class="btn outline sm" data-action="user-pass" data-id="${u.id}">Set password</button>
+        <button class="btn ${u.active?'danger':'primary'} sm" data-action="user-toggle" data-id="${u.id}"
+          ${u.id===me.id?'disabled title="You cannot deactivate yourself"':''}>
+          ${u.active?'Deactivate':'Activate'}</button>
+      </td>
+    </tr>`).join('')}
+  </table></div>
+
+  <details class="mt10" style="background:#fff; border:1px solid var(--border); border-radius:12px">
+    <summary style="cursor:pointer; padding:12px 16px; font-weight:600; color:var(--green-dark)">＋ Create a new account</summary>
+    <form id="newUserForm" style="padding:14px 16px">
+      <div class="row2">
+        <div class="field"><label>Username (login)</label><input name="username" required autocomplete="off"></div>
+        <div class="field"><label>Full name</label><input name="full_name" required></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Role</label>
+          <select name="role" id="nuRole">
+            <option value="dept">Department Head</option>
+            <option value="finance">Finance &amp; Accounts Office</option>
+            <option value="dg">Director General</option>
+            <option value="admin">Super Admin</option>
+          </select></div>
+        <div class="field" id="nuDeptField" style="display:none"><label>Department</label>
+          <select name="dept_id">${state.depts.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label>Password (min 4 characters)</label><input name="password" type="text" minlength="4" required autocomplete="new-password"></div>
+      <button class="btn primary sm" type="submit">Create account</button>
+    </form>
+  </details>
+
+  <h2>Role &amp; access matrix (what each role sees / cannot access)</h2>
+  <div class="card" style="overflow-x:auto">
+  <table class="matrix">
+    <tr><th>Capability</th><th>Super Admin</th><th>Finance &amp; Accounts</th><th>Director General</th><th>Department Head</th></tr>
+    <tr><td>View all departments &amp; data</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">— own dept only</td></tr>
+    <tr><td>View other departments' evidence</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td></tr>
+    <tr><td>Issue imprest (advance from accounts)</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>Record expenses &amp; upload evidence</td><td class="y">✓ any dept</td><td class="n">—</td><td class="n">—</td><td class="y">✓ own dept</td></tr>
+    <tr><td>Submit settlement for retirement</td><td class="y">✓ any dept</td><td class="n">—</td><td class="n">—</td><td class="y">✓ own dept</td></tr>
+    <tr><td>Raise new imprest request</td><td class="y">✓ any dept</td><td class="n">—</td><td class="n">—</td><td class="y">✓ own dept</td></tr>
+    <tr><td>Verify / return settlements</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>Approve request — Level 1 (Finance)</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>Approve request — Level 2 (DG, final)</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td></tr>
+    <tr><td>Release approved imprest</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>Print consolidated report</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓ own dept</td></tr>
+    <tr><td>Manage users &amp; passwords</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>Reset system data</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+  </table></div>
+
+  <h2>Data</h2>
+  <div class="card">
+    <p class="small" style="margin-bottom:10px">Delete all issues, expenses, settlements, requests, uploaded evidence and user accounts,
+    then restore the original sample dataset and default accounts.</p>
+    <button class="btn danger sm" data-action="reset-modal">Reset system data (demo)</button>
+  </div>`;
+  $('#view').innerHTML = html;
+
+  $('#nuRole').onchange = e=>{ $('#nuDeptField').style.display = e.target.value==='dept'?'block':'none'; };
+  $('#newUserForm').onsubmit = async e=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    try{
+      await api('/api/users', {username:f.get('username'), full_name:f.get('full_name'), role:f.get('role'),
+        dept_id:f.get('role')==='dept'?+f.get('dept_id'):null, password:f.get('password')});
+      toast('Account created.');
+      renderAdmin();
+    }catch(err){ toast(err.message,true); }
+  };
+}
+
+/* ============================== modals ============================== */
+function openModal(title, body, foot=''){
+  $('#modalRoot').innerHTML = `<div class="overlay" id="overlay">
+    <div class="modal"><h3>${title}</h3>${body}<div class="foot">${foot}
+      <button class="btn outline" data-action="close-modal">Close</button></div></div></div>`;
+  $('#overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
+}
+function closeModal(){ $('#modalRoot').innerHTML=''; }
+
+function issueModal(deptId){
+  const d = state.depts.find(x=>x.id===deptId);
+  const body = `<form id="mForm">
+    ${deptId?'':`<div class="field"><label>Department</label>
+      <select name="dept_id">${state.depts.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>`}
+    <div class="row2">
+      <div class="field"><label>Voucher number</label>
+        <input name="voucher_no" required placeholder="e.g. VCH-2026-031"></div>
+      <div class="field"><label>Amount advanced (₦)</label>
+        <input type="number" name="amount" min="1" step="0.01" required></div>
+    </div>
+    <div class="field"><label>Issue date</label><input type="date" name="issue_date" value="${new Date().toISOString().slice(0,10)}" required></div>
+    <div class="field"><label>Notes (optional)</label><input name="notes" placeholder="Purpose of the advance"></div>
+    <div class="hint">Drawn from the account department to ${d?esc(d.name):'the selected department'} for running costs.</div>
+  </form>`;
+  openModal('Issue imprest (Finance &amp; Accounts Office)', body,
+    `<button class="btn primary" form="mForm" type="submit">Issue</button>`);
+  $('#mForm').onsubmit = async e=>{
+    e.preventDefault();
+    const f = new FormData($('#mForm'));
+    try{
+      await api('/api/issues', {dept_id:+(f.get('dept_id')||deptId), voucher_no:f.get('voucher_no').trim(),
+        amount:+f.get('amount'), issue_date:f.get('issue_date'), notes:f.get('notes')});
+      toast('Imprest issued.'); closeModal(); await refresh();
+    }catch(err){ toast(err.message,true); }
+  };
+}
+
+function expenseModal(issueId){
+  const i = state.depts.flatMap(d=>d.issues).find(x=>x.id===issueId);
+  if(!i) return;
+  const body = `<form id="mForm">
+    <div class="row2">
+      <div class="field"><label>Expense date</label><input type="date" name="expense_date" value="${new Date().toISOString().slice(0,10)}" required></div>
+      <div class="field"><label>Category</label>
+        <select name="category">
+          ${['Travel','Supplies','Repairs','Utilities','Welfare','Equipment','Materials','Training','Services','Protocols','Medical','Other']
+            .map(c=>`<option>${c}</option>`).join('')}
+        </select></div>
+    </div>
+    <div class="field"><label>Description of expense</label>
+      <input name="description" required placeholder="What was bought / paid for"></div>
+    <div class="field"><label>Amount (₦)</label><input type="number" name="amount" min="0.01" step="0.01" required></div>
+    <div class="field"><label>Evidence (receipt / proof of payment)</label>
+      <input type="file" name="evidence" accept=".jpg,.jpeg,.png,.webp,.pdf">
+      <div class="hint">JPG, PNG, WEBP or PDF, max 10&nbsp;MB. Optional, but expenses without evidence are flagged.</div></div>
+    <input type="hidden" name="issue_id" value="${i.id}">
+    <input type="hidden" name="dept_id" value="${i.dept_id}">
+  </form>`;
+  openModal(`Add expense — ${esc(i.voucher_no)}`, body,
+    `<button class="btn primary" form="mForm" type="submit">Save expense</button>`);
+  $('#mForm').onsubmit = async e=>{
+    e.preventDefault();
+    try{
+      await api('/api/expenses', new FormData($('#mForm')));
+      toast('Expense recorded with evidence.'); closeModal(); await refresh();
+    }catch(err){ toast(err.message,true); }
+  };
+}
+
+function settlementModal(issueId){
+  const i = state.depts.flatMap(d=>d.issues).find(x=>x.id===issueId);
+  if(!i) return;
+  openModal(`Retire imprest ${esc(i.voucher_no)}`, `
+    <p class="small" style="margin-bottom:10px">Reconciliation: <b>${fmt(i.amount)} advanced = expenses evidenced + cash on hand</b>.</p>
+    <div class="kpi-row">
+      <div class="kpi"><div class="l">Imprest advanced</div><div class="v">${fmt(i.amount)}</div></div>
+      <div class="kpi"><div class="l">Expenses recorded</div><div class="v">${fmt(i.expenses_total)} <small class="small">(${i.expenses_count})</small></div></div>
+      <div class="kpi"><div class="l">Cash on hand</div><div class="v" id="cohV">${fmt(i.cash_on_hand)}</div></div>
+    </div>
+    <form id="mForm">
+      <div class="field"><label>Cash count on hand (₦)</label>
+        <input type="number" name="cash_on_hand" id="coh" step="0.01" value="${Math.max(0,i.cash_on_hand)}" required></div>
+      <div class="field"><label>Notes to Finance (optional)</label>
+        <input name="notes" placeholder="e.g. retiring ${esc(i.voucher_no)}, all receipts attached"></div>
+      <div class="hint" id="varHint"></div>
+    </form>
+    <div class="hint" id="noEv"></div>`,
+    `<button class="btn primary" form="mForm" type="submit">Submit for verification</button>`);
+  const noEv = i.expenses.filter(e=>!e.evidence_path).length;
+  if(noEv) $('#noEv').innerHTML = `⚠ ${noEv} expense(s) have no evidence file uploaded.`;
+  const upd = ()=>{
+    const coh = +$('#coh').value||0;
+    const v = i.amount - i.expenses_total - coh;
+    $('#cohV').textContent = fmt(coh);
+    $('#varHint').innerHTML = `Variance: <span class="${Math.abs(v)<0.005?'variance-ok':'variance-bad'}">${fmt(v)}</span>` +
+      (Math.abs(v)>=0.005?` — should be 0 for a fully reconciled imprest.`:``);
+  };
+  $('#coh').oninput = upd; upd();
+  $('#mForm').onsubmit = async e=>{
+    e.preventDefault();
+    const f = new FormData($('#mForm'));
+    try{
+      await api('/api/settlements', {issue_id:i.id, cash_on_hand:+f.get('cash_on_hand'), notes:f.get('notes')});
+      toast('Settlement submitted to Finance & Accounts Office.');
+      closeModal(); await refresh();
+    }catch(err){ toast(err.message,true); }
+  };
+}
+
+function verifyModal(issueId){
+  const i = state.depts.flatMap(d=>d.issues).find(x=>x.id===issueId);
+  if(!i) return;
+  openModal(`Verify settlement — ${esc(i.voucher_no)} (${esc(state.depts.find(d=>d.id===i.dept_id).name)})`, `
+    <div class="kpi-row">
+      <div class="kpi"><div class="l">Advanced</div><div class="v">${fmt(i.amount)}</div></div>
+      <div class="kpi"><div class="l">Expenses</div><div class="v">${fmt(i.expenses_total)}</div></div>
+      <div class="kpi"><div class="l">Cash on hand</div><div class="v">${fmt(i.cash_on_hand)}</div></div>
+      <div class="kpi"><div class="l">Variance</div><div class="v ${i.variance===0?'variance-ok':'variance-bad'}">${fmt(i.variance)}</div></div>
+    </div>
+    ${i.settlement?.notes?`<div class="trail">Submitted notes: ${esc(i.settlement.notes)}</div>`:''}
+    <form id="mForm">
+      <div class="field"><label>Verification notes (optional)</label>
+        <textarea name="notes" placeholder="e.g. receipts matched; cash counted and confirmed"></textarea></div>
+    </form>`,
+    `<button class="btn danger" data-action="verify-do" data-issue="${i.id}" data-action-val="return">Return for correction</button>
+     <button class="btn primary" data-action="verify-do" data-issue="${i.id}" data-action-val="verify">Verify &amp; reconcile</button>`);
+}
+
+function decideModal(reqId, level, decision){
+  const r = state.requests.find(x=>x.id===reqId);
+  if(!r) return;
+  const lvl = level==='finance' ? 'Finance &amp; Accounts Office' : 'Director General (DG)';
+  openModal(`${decision==='approve'?'Approve':'Reject'} request #${r.id} — ${esc(r.dept_name)}`, `
+    <div class="q-meta">As <b>${lvl}</b> (approval level ${level==='finance'?1:'2'} of 2)</div>
+    <div class="q-meta"><b>${fmt(r.amount)}</b> — ${esc(r.purpose)}</div>
+    <div class="q-meta">Submitted ${fts(r.created_at)} ${level==='dg'&&r.finance_comment?`· Finance already approved: “${esc(r.finance_comment)}”`:''}</div>
+    <form id="mForm">
+      <div class="field"><label>Comment (recorded on the request)</label>
+        <textarea name="comment" placeholder="${decision==='approve'?'e.g. approved, within budget':'e.g. unsupported, reduce amount'}"></textarea></div>
+    </form>`,
+    `<button class="btn ${decision==='approve'?'primary':'danger'}" data-action="decide-do" data-id="${r.id}"
+       data-level="${level}" data-decision="${decision}">${decision==='approve'?'Approve':'Reject'} request</button>`);
+}
+
+function releaseModal(reqId){
+  const r = state.requests.find(x=>x.id===reqId);
+  if(!r) return;
+  openModal(`Release imprest to ${esc(r.dept_name)}`, `
+    <p class="small" style="margin-bottom:10px">Request #${r.id} — <b>${fmt(r.amount)}</b> for: ${esc(r.purpose)}.
+    Both approval levels are complete.</p>
+    <form id="mForm">
+      <div class="field"><label>Voucher number for the new issue</label>
+        <input name="voucher_no" required placeholder="e.g. VCH-2026-031"></div>
+      <div class="field"><label>Issue date</label>
+        <input type="date" name="issue_date" value="${new Date().toISOString().slice(0,10)}" required></div>
+    </form>
+    <div class="hint">Releasing creates a new imprest issue that the department will evidence and retire.</div>`,
+    `<button class="btn blue" data-action="release-do" data-id="${r.id}">Release funds</button>`);
+}
+
+function lightbox(src, isPdf){
+  openModal('Evidence', isPdf
+    ? `<iframe src="${src}" style="width:100%; height:70vh; border:1px solid var(--border); border-radius:8px"></iframe>`
+    : `<img class="lightbox-img" src="${src}" alt="evidence">`);
+}
+
+function resetModal(){
+  openModal('Reset system data?', `
+    <p class="small" style="margin-bottom:8px">This deletes <b>all</b> issues, expenses, settlements, requests, uploaded
+    evidence and user accounts, then restores the sample dataset and default accounts. Continue?</p>`,
+    `<button class="btn danger" data-action="do-reset">Yes, reset</button>`);
+}
+
+function userPassModal(uid){
+  const u = adminUsers.find(x=>x.id===uid);
+  if(!u) return;
+  openModal(`Set password — ${esc(u.full_name)} (@${esc(u.username)})`, `
+    <div class="field"><label>New password (min 4 characters)</label>
+      <input id="npw" type="text" minlength="4" required autofocus autocomplete="new-password"></div>
+    <div class="hint">The user will be signed out and must sign in with the new password.</div>`,
+    `<button class="btn primary" data-action="user-pass-do" data-id="${u.id}">Save password</button>`);
+}
+
+/* ============================== events ============================== */
+document.addEventListener('click', async e=>{
+  const t = e.target.closest('[data-action]');
+  if(!t) return;
+  const a = t.dataset.action, id = +t.dataset.id;
+  switch(a){
+    case 'tab': UI.tab = t.dataset.tab; render(); break;
+    case 'pick-dept': UI.dept = id; render(); break;
+    case 'open-dept': UI.dept = id; UI.tab='departments'; render(); break;
+    case 'close-modal': closeModal(); break;
+    case 'lightbox': lightbox(t.dataset.src, t.dataset.pdf==='1'); break;
+    case 'issue-modal': issueModal(id); break;
+    case 'expense-modal': expenseModal(id); break;
+    case 'settlement-modal': settlementModal(id); break;
+    case 'verify-modal': verifyModal(id); break;
+    case 'verify-do': {
+      const f = $('#mForm');
+      try{ await api(`/api/settlements/${t.dataset.issue}/verify`,
+        {action:t.dataset.actionVal, notes:f?f.get('notes')||'':''});
+        toast(t.dataset.actionVal==='verify'?'Settlement verified and reconciled.':'Settlement returned for correction.');
+        closeModal(); await refresh();
+      }catch(err){ toast(err.message,true); }
+      break; }
+    case 'decide': decideModal(id, t.dataset.level, t.dataset.decision); break;
+    case 'decide-do': {
+      const f = $('#mForm');
+      try{ await api(`/api/requests/${t.dataset.id}/${t.dataset.level}`,
+        {decision:t.dataset.decision, comment:f?f.get('comment')||'':''});
+        toast(t.dataset.decision==='approve'?'Approved — passed to the next level.':'Request rejected.');
+        closeModal(); await refresh();
+      }catch(err){ toast(err.message,true); }
+      break; }
+    case 'release-modal': releaseModal(id); break;
+    case 'release-do': {
+      const f = $('#mForm');
+      try{ await api(`/api/requests/${t.dataset.id}/release`,
+        {voucher_no:f.get('voucher_no').trim(), issue_date:f.get('issue_date')});
+        toast('Imprest released and recorded as a new issue.');
+        closeModal(); await refresh();
+      }catch(err){ toast(err.message,true); }
+      break; }
+    case 'reset-modal': resetModal(); break;
+    case 'do-reset':
+      try{ await api('/api/reset', {seed:true}); closeModal(); await refresh(); toast('Data reset.'); }
+      catch(err){ toast(err.message,true); }
+      break;
+    case 'user-pass': userPassModal(id); break;
+    case 'user-pass-do': {
+      const pw = $('#npw').value;
+      if(pw.length<4){ toast('Password must be at least 4 characters.', true); return; }
+      try{ await api(`/api/users/${t.dataset.id}/password`, {password:pw});
+        toast('Password updated.'); closeModal(); renderAdmin(); }
+      catch(err){ toast(err.message,true); }
+      break; }
+    case 'user-toggle':
+      try{
+        const j = await api(`/api/users/${t.dataset.id}/toggle`, {});
+        toast(j.active ? 'Account activated.' : 'Account deactivated.');
+        renderAdmin();
+      }catch(err){ toast(err.message,true); }
+      break;
+  }
+});
+
+function render(){
+  if(!state || !me) return;
+  renderHeader();
+  ({dashboard:renderDashboard, departments:renderDepartments,
+    approvals:renderApprovals, reports:renderReports,
+    admin:renderAdmin}[UI.tab])();
+}
+boot();
+</script>
+</body>
+</html>
